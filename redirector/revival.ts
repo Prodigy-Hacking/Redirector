@@ -1,3 +1,4 @@
+// @ts-nocheck
 require = (() => {}) as any;
 import "../typings/pixi";
 
@@ -5,7 +6,7 @@ _.functions = Object.create(null);
 
 _.functions.escapeBattle = () => {
 	const currentState = _.instance.game.state.current;
-	if (currentState === "PVP") _.instance.game.state.states.PVP.endPVP();
+	if (currentState === "PVP") Object.fromEntries(_.instance.game.state.states).PVP.endPVP();
 	else if (currentState === "CoOp") _.instance.prodigy.world.$(_.player.data.zone);
 	else _.instance.game.state.callbackContext.runAwayCallback();
 };
@@ -77,7 +78,7 @@ _.functions.customChat = (text: string) => {
 	next();
 };
 */
-Object.defineProperty(_, "gameData", { get: () => _.instance.game.state.states.Boot._gameData });
+Object.defineProperty(_, "gameData", { get: () => _.instance.game.state.states.get('Boot')._gameData });
 Object.defineProperty(_, "localizer", {
 	get: () => _.instance.prodigy.gameContainer.get("LocalizationService"),
 });

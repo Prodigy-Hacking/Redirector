@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express from "express";
 import fetch from "node-fetch";
 import fs from "fs";
@@ -5,31 +6,35 @@ import path from "path";
 import { transpile } from "typescript";
 import Discord from "discord.js";
 import cors from "cors";
+import ms from "ms";
 
 const app = express();
 // should match https://github.com/Prodigy-Hacking/PHEx/blob/master/src/manifest.json
-const SupportPHEXVersion = "2.0.0";
+const SupportPHEXVersion = "2.0.2";
 let lastVersion = "None";
 interface GameStatus {
 	status: string;
 	data?: { gameClientVersion?: string; prodigyGameFlags: { gameDataVersion: number } };
 }
+const startDate = Date.now();
 
-setInterval(async () => {
+/*setInterval(async () => {
 	try {
 		const status: GameStatus = await (await fetch("https://api.prodigygame.com/game-api/status")).json();
+		console.log(status);
 		const version = status?.data?.gameClientVersion;
 		if (lastVersion === "None") return (lastVersion = version!);
 
 		// write modified gamefile to disk, in case there's a crash
 	} catch (e) {}
-}, 100000);
+}, 10 * 60 * 1000);*/
 
 app.use(cors());
 
 app.get("/game.min.js", async (req, res) => {
-	const status: GameStatus = await (await fetch("https://api.prodigygame.com/game-api/status")).json();
-	const version = status?.data?.gameClientVersion;
+	const version = JSON.parse((await (await fetch('https://play.prodigygame.com/play')).text())
+	.match(/(?<=gameStatusDataStr = ').+(?=')/)[0])
+	const status = await (await fetch('https://api.prodigygame.com/game-api/status')).json()
 	if (status.status !== "success" || !version) return res.sendStatus(503);
 	const gameMinJS = await (
 		await fetch(`https://code.prodigygame.com/code/${version}/game.min.js?v=${version}`)
@@ -50,7 +55,10 @@ app.get("/game.min.js", async (req, res) => {
 			`nootmeat = func => {
 				let elephant = 2
 			}
-			exports = {};_.variables=Object.create(null);
+			exports = {};
+			_.variables=Object.create(null);
+
+			console.trace = _ => {};
 	
 			${gameMinJS}
 
@@ -62,7 +70,7 @@ app.get("/game.min.js", async (req, res) => {
 			SW.Load.onGameLoad();
 			setTimeout(() => {
 				${await (await fetch("https://raw.githubusercontent.com/Prodigy-Hacking/ProdigyMathGameHacking/master/willsCheatMenu/loader.js")).text()}
-			}, 10000);
+			}, 15000);
 		`)
 	);
 });
@@ -102,8 +110,7 @@ app.get("/version", async (req, res) => {
 	return res.send(SupportPHEXVersion);
 });
 app.get("/status", async (req, res) => {
-	res.type(".json");
-	return res.sendFile(__dirname + "/status.json");
+	return res.send(`Redirector has been online for [${ms(Date.now() - startDate)}]`)
 });
 
 const port = process.env.PORT ?? 1337;
